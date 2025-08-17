@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Cobranças RGS . Conectar WhatsApp</title>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
   <style>
     :root{
       --bg:#eef2f4; --card:#ffffff; --muted:#7a8794;
@@ -31,6 +32,13 @@
     .btn-danger{background:#e74c3c;color:#fff}
     .btn:active{transform:translateY(1px)}
     .btn[disabled]{opacity:.6;cursor:not-allowed}
+    footer{
+      margin-top:20px;
+      text-align:center;
+      font-family:'Dancing Script',cursive;
+      font-size:20px;
+      color:#555;
+    }
   </style>
 </head>
 <body>
@@ -67,6 +75,10 @@
     </div>
   </div>
 
+  <footer>
+    Lucas Alves Consultoria em RPA
+  </footer>
+
   <script>
     const CONFIG = {
       baseUrl: 'https://api.z-api.io',
@@ -86,90 +98,4 @@
       qrWrap: document.getElementById('qrWrap'),
       qrBox: document.getElementById('qrBox'),
       statusMsg: document.getElementById('statusMsg'),
-      btnDisconnect: document.getElementById('btnDisconnect'),
-      actions: document.getElementById('actions'),
-      statusTitle: document.getElementById('statusTitle')
-    };
-
-    function headers(){ return { 'Accept':'application/json', 'Client-Token': CONFIG.accountToken }; }
-
-    function setConnectedUI(connected){
-      if (connected){
-        els.connectedWrap.hidden = false;
-        els.qrWrap.hidden = true;
-        els.qrBox.innerHTML = '';
-        els.statusTitle.textContent = 'STATUS DO DISPOSITIVO';
-        els.statusMsg.textContent = 'Conexão estabelecida com sucesso';
-        els.actions.hidden = false; // mostra botão depois da msg
-      } else {
-        els.connectedWrap.hidden = true;
-        els.qrWrap.hidden = false;
-        els.statusTitle.textContent = 'QR CODE';
-        els.statusMsg.textContent = 'Instância desconectada — escaneie o QR para conectar';
-        els.actions.hidden = true;  // esconde botão
-      }
-    }
-
-    function parseConnected(data){
-      if (typeof data.connected === 'boolean') return data.connected;
-      if (typeof data.isConnected === 'boolean') return data.isConnected;
-      const s = String(data.state ?? data.status ?? data.value ?? '').toUpperCase();
-      return s.includes('CONNECT');
-    }
-
-    async function getJSON(url){
-      const res = await fetch(url, { headers: headers(), cache:'no-store' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.json();
-    }
-
-    async function fetchStatus(){
-      const url = CONFIG.endpoints.status(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken);
-      const data = await getJSON(url);
-      return parseConnected(data);
-    }
-
-    async function renderQr(){
-      els.qrBox.innerHTML = '<div class="spinner" role="status" aria-label="Carregando QR"></div>';
-      const url = CONFIG.endpoints.qrImage(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken);
-      const res = await fetch(url, { headers: headers(), cache:'no-store' });
-      if (!res.ok) { els.qrBox.innerHTML = '<span style="color:#c0392b">Falha ao carregar QR</span>'; return; }
-      const ct = res.headers.get('content-type') || '';
-      let base64;
-      if (ct.includes('application/json')){
-        const j = await res.json();
-        base64 = j.base64 || j.image || j.qrCode || j.value;
-      } else { base64 = (await res.text()).trim(); }
-      if (!base64){ els.qrBox.textContent = 'QR não encontrado.'; return; }
-      const dataUrl = base64.startsWith('data:') ? base64 : `data:image/png;base64,${base64}`;
-      els.qrBox.innerHTML = `<img src="${dataUrl}" alt="QR Code"/>`;
-    }
-
-    async function disconnectInstance(){
-      try{
-        els.btnDisconnect.disabled = true;
-        const url = CONFIG.endpoints.disconnect(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken);
-        await fetch(url, { method:'GET', headers: headers() });
-      }finally{
-        els.btnDisconnect.disabled = false;
-        await tick();
-      }
-    }
-
-    async function tick(){
-      try{
-        const connected = await fetchStatus();
-        setConnectedUI(connected);
-        if (!connected) { await renderQr(); }
-      }catch(e){
-        setConnectedUI(false);
-        try { await renderQr(); } catch {}
-      }
-    }
-
-    els.btnDisconnect.addEventListener('click', disconnectInstance);
-    tick();
-    setInterval(tick, CONFIG.pollMs);
-  </script>
-</body>
-</html>
+      btnDisconnect: document.getElementById('btnDis
