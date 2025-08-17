@@ -147,7 +147,7 @@
       try{
         els.btnDisconnect.disabled = true;
         const url = CONFIG.endpoints.disconnect(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken);
-        const res = await fetch(url, { method:'POST', headers: headers() });
+        const res = await fetch(url, { method:'GET', headers: headers() });
         // independentemente do corpo, depois de desconectar, atualiza a UI
       }catch(err){
         // opcional: exibir mensagem de erro
