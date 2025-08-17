@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Cobranças RGS . Conectar WhatsApp</title>
   <style>
@@ -11,14 +11,11 @@
       --ok:#2ecc71; --warn:#e67e22; --shadow:0 12px 28px rgba(12,26,44,.12);
     }
     *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);font:16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, sans-serif;color:#132433;display:grid;place-items:center;min-height:100dvh;padding:20px}
+    body{margin:0;background:var(--bg);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,Inter,Arial,sans-serif;color:#132433;display:grid;place-items:center;min-height:100dvh;padding:20px}
     .card{width:100%;max-width:420px;background:var(--card);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;border:1px solid #e5eaef}
     .card-head{background:var(--brand);color:#fff;padding:18px 20px;text-align:center}
     .card-head h1{margin:0;font-size:20px;line-height:1.2}
     .card-body{padding:20px}
-    .select{position:relative;margin-bottom:16px}
-    .select select{appearance:none;width:100%;padding:12px 40px 12px 14px;border:1px solid #dde5ec;border-radius:10px;background:#f9fbfc;color:#334155;font-weight:600}
-    .select:after{content:"▾";position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#6b7a8b;pointer-events:none}
     .status-box{background:#f2f5f7;border:1px solid #e6edf2;border-radius:14px;padding:18px;text-align:center}
     .status-title{font-size:13px;letter-spacing:.4px;color:#8a98a8;margin-bottom:14px;font-weight:700}
     /* QR area */
@@ -29,6 +26,12 @@
     .ok svg{width:52px;height:52px;fill:var(--ok)}
     .divider{height:4px;border:0;border-radius:999px;background:#e6edf2;margin:18px 0}
     .msg{color:#6b7a8b;text-align:center;font-size:14px}
+    /* Botão desconectar (só aparece conectado) */
+    .actions{display:flex;justify-content:center;margin-top:12px}
+    .btn{appearance:none;border:0;border-radius:12px;padding:10px 16px;font-weight:700;cursor:pointer;transition:filter .15s ease,transform .05s ease}
+    .btn-danger{background:#e74c3c;color:#fff}
+    .btn:active{transform:translateY(1px)}
+    .btn[disabled]{opacity:.6;cursor:not-allowed}
   </style>
 </head>
 <body>
@@ -37,13 +40,6 @@
       <h1>Cobranças RGS<br/>Conectar WhatsApp</h1>
     </div>
     <div class="card-body">
-      <!-- seletor ilustrativo (não altera lógica) -->
-      <div class="select" aria-hidden="true">
-        <select disabled>
-          <option>(81) 9103-7041</option>
-        </select>
-      </div>
-
       <div class="status-box">
         <div class="status-title">STATUS DO DISPOSITIVO</div>
 
@@ -51,6 +47,9 @@
         <div id="connectedWrap" hidden>
           <div class="ok" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M9 16.2l-3.5-3.5-1.4 1.4L9 19 20 8l-1.4-1.4z"/></svg>
+          </div>
+          <div class="actions">
+            <button id="btnDisconnect" class="btn btn-danger">Desconectar instância</button>
           </div>
         </div>
 
@@ -74,8 +73,9 @@
       accountToken: 'Ffa07a322c30c40f69a39b5700df9bea8S',
       pollMs: 5000,
       endpoints: {
-        status(b, id, tok){ return `${b}/instances/${id}/token/${tok}/status`; },
-        qrImage(b, id, tok){ return `${b}/instances/${id}/token/${tok}/qr-code/image`; }
+        status(b,id,t){ return `${b}/instances/${id}/token/${t}/status`; },
+        qrImage(b,id,t){ return `${b}/instances/${id}/token/${t}/qr-code/image`; },
+        disconnect(b,id,t){ return `${b}/instances/${id}/token/${t}/disconnect`; }
       }
     };
 
@@ -84,7 +84,8 @@
       connectedWrap: document.getElementById('connectedWrap'),
       qrWrap: document.getElementById('qrWrap'),
       qrBox: document.getElementById('qrBox'),
-      statusMsg: document.getElementById('statusMsg')
+      statusMsg: document.getElementById('statusMsg'),
+      btnDisconnect: document.getElementById('btnDisconnect')
     };
 
     // ===== helpers =====
@@ -92,13 +93,11 @@
 
     function setConnectedUI(connected){
       if (connected){
-        // mostrar check, esconder QR
         els.connectedWrap.hidden = false;
         els.qrWrap.hidden = true;
         els.qrBox.innerHTML = '';
         els.statusMsg.textContent = 'Conexão estabelecida com sucesso';
       } else {
-        // mostrar QR, esconder check
         els.connectedWrap.hidden = true;
         els.qrWrap.hidden = false;
         els.statusMsg.textContent = 'Instância desconectada — escaneie o QR para conectar';
@@ -109,7 +108,7 @@
       if (typeof data.connected === 'boolean') return data.connected;
       if (typeof data.isConnected === 'boolean') return data.isConnected;
       const s = String(data.state ?? data.status ?? data.value ?? '').toUpperCase();
-      return s.includes('CONNECT'); // CONNECTED / RECONNECTED etc.
+      return s.includes('CONNECT');
     }
 
     // ===== network =====
@@ -129,11 +128,8 @@
       els.qrBox.innerHTML = '<span style="color:#9aa7b4">Carregando QR…</span>';
       const url = CONFIG.endpoints.qrImage(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken);
       const res = await fetch(url, { headers: headers(), cache:'no-store' });
-      if (!res.ok) {
-        els.qrBox.innerHTML = '<span style="color:#c0392b">Falha ao carregar QR</span>';
-        return;
-      }
-      // pode vir JSON { base64: '...' | qrCode | image } ou texto base64 puro
+      if (!res.ok) { els.qrBox.innerHTML = '<span style="color:#c0392b">Falha ao carregar QR</span>'; return; }
+
       const ct = res.headers.get('content-type') || '';
       let base64;
       if (ct.includes('application/json')){
@@ -147,6 +143,21 @@
       els.qrBox.innerHTML = `<img src="${dataUrl}" alt="QR Code"/>`;
     }
 
+    async function disconnectInstance(){
+      try{
+        els.btnDisconnect.disabled = true;
+        const url = CONFIG.endpoints.disconnect(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken);
+        const res = await fetch(url, { method:'POST', headers: headers() });
+        // independentemente do corpo, depois de desconectar, atualiza a UI
+      }catch(err){
+        // opcional: exibir mensagem de erro
+      }finally{
+        els.btnDisconnect.disabled = false;
+        // força checar o status logo após desconectar
+        await tick();
+      }
+    }
+
     // ===== loop =====
     async function tick(){
       try{
@@ -154,12 +165,15 @@
         setConnectedUI(connected);
         if (!connected) { await renderQr(); }
       }catch(e){
-        // Em erro de status, mostramos opção de reconectar via QR
         setConnectedUI(false);
         try { await renderQr(); } catch {}
       }
     }
 
+    // eventos
+    els.btnDisconnect.addEventListener('click', disconnectInstance);
+
+    // start
     tick();
     setInterval(tick, CONFIG.pollMs);
   </script>
