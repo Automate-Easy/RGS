@@ -18,14 +18,18 @@
     .card-body{padding:20px}
     .status-box{background:#f2f5f7;border:1px solid #e6edf2;border-radius:14px;padding:18px;text-align:center}
     .status-title{font-size:13px;letter-spacing:.4px;color:#8a98a8;margin-bottom:14px;font-weight:700}
+    /* QR area */
     .qr{width:260px;height:260px;margin:0 auto;border-radius:12px;background:#fff;display:grid;place-items:center;border:1px dashed #cfd8e3;overflow:hidden}
     .qr img{width:100%;height:100%;object-fit:contain}
+    /* Spinner */
     .spinner{width:44px;height:44px;border:4px solid #e6edf2;border-top-color:var(--brand);border-radius:50%;animation:spin 1s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
+    /* Check icon */
     .ok{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;margin:6px auto 4px;background:rgba(46,204,113,.15);border:2px solid rgba(46,204,113,.35)}
     .ok svg{width:52px;height:52px;fill:var(--ok)}
     .divider{height:4px;border:0;border-radius:999px;background:#e6edf2;margin:18px 0}
     .msg{color:#6b7a8b;text-align:center;font-size:14px}
+    /* Botão desconectar */
     .actions{display:flex;justify-content:center;margin-top:12px}
     .btn{appearance:none;border:0;border-radius:12px;padding:10px 16px;font-weight:700;cursor:pointer;transition:filter .15s ease,transform .05s ease}
     .btn-danger{background:#e74c3c;color:#fff}
@@ -47,6 +51,9 @@
           <div class="ok" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M9 16.2l-3.5-3.5-1.4 1.4L9 19 20 8l-1.4-1.4z"/></svg>
           </div>
+          <div class="actions" id="actions">
+            <button id="btnDisconnect" class="btn btn-danger">Desconectar instância</button>
+          </div>
         </div>
 
         <!-- desconectado (mostra QR) -->
@@ -59,15 +66,11 @@
 
       <div class="divider"></div>
       <p class="msg" id="statusMsg">Aguardando status…</p>
-
-      <!-- botão vem DEPOIS da mensagem -->
-      <div class="actions" id="actions" hidden>
-        <button id="btnDisconnect" class="btn btn-danger">Desconectar instância</button>
-      </div>
     </div>
   </div>
 
   <script>
+    // ===== CONFIG =====
     const CONFIG = {
       baseUrl: 'https://api.z-api.io',
       instanceId: '3D67BF8C04F6A0AE58362272D360C213',
@@ -81,6 +84,7 @@
       }
     };
 
+    // ===== UI refs =====
     const els = {
       connectedWrap: document.getElementById('connectedWrap'),
       qrWrap: document.getElementById('qrWrap'),
@@ -100,13 +104,13 @@
         els.qrBox.innerHTML = '';
         els.statusTitle.textContent = 'STATUS DO DISPOSITIVO';
         els.statusMsg.textContent = 'Conexão estabelecida com sucesso';
-        els.actions.hidden = false; // mostra botão depois da msg
+        els.actions.hidden = false;
       } else {
         els.connectedWrap.hidden = true;
         els.qrWrap.hidden = false;
         els.statusTitle.textContent = 'QR CODE';
         els.statusMsg.textContent = 'Instância desconectada — escaneie o QR para conectar';
-        els.actions.hidden = true;  // esconde botão
+        els.actions.hidden = true;
       }
     }
 
@@ -130,16 +134,21 @@
     }
 
     async function renderQr(){
+      // spinner enquanto carrega
       els.qrBox.innerHTML = '<div class="spinner" role="status" aria-label="Carregando QR"></div>';
+
       const url = CONFIG.endpoints.qrImage(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken);
       const res = await fetch(url, { headers: headers(), cache:'no-store' });
       if (!res.ok) { els.qrBox.innerHTML = '<span style="color:#c0392b">Falha ao carregar QR</span>'; return; }
+
       const ct = res.headers.get('content-type') || '';
       let base64;
       if (ct.includes('application/json')){
         const j = await res.json();
         base64 = j.base64 || j.image || j.qrCode || j.value;
-      } else { base64 = (await res.text()).trim(); }
+      } else {
+        base64 = (await res.text()).trim();
+      }
       if (!base64){ els.qrBox.textContent = 'QR não encontrado.'; return; }
       const dataUrl = base64.startsWith('data:') ? base64 : `data:image/png;base64,${base64}`;
       els.qrBox.innerHTML = `<img src="${dataUrl}" alt="QR Code"/>`;
@@ -168,6 +177,7 @@
     }
 
     els.btnDisconnect.addEventListener('click', disconnectInstance);
+
     tick();
     setInterval(tick, CONFIG.pollMs);
   </script>
