@@ -21,6 +21,9 @@
     /* QR area */
     .qr{width:260px;height:260px;margin:0 auto;border-radius:12px;background:#fff;display:grid;place-items:center;border:1px dashed #cfd8e3;overflow:hidden}
     .qr img{width:100%;height:100%;object-fit:contain}
+    /* Spinner */
+    .spinner{width:44px;height:44px;border:4px solid #e6edf2;border-top-color:var(--brand);border-radius:50%;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
     /* Check icon */
     .ok{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;margin:6px auto 4px;background:rgba(46,204,113,.15);border:2px solid rgba(46,204,113,.35)}
     .ok svg{width:52px;height:52px;fill:var(--ok)}
@@ -55,7 +58,9 @@
 
         <!-- desconectado (mostra QR) -->
         <div id="qrWrap" hidden>
-          <div class="qr" id="qrBox"><span style="color:#9aa7b4">Carregando QR…</span></div>
+          <div class="qr" id="qrBox">
+            <div class="spinner" role="status" aria-label="Carregando QR"></div>
+          </div>
         </div>
       </div>
 
@@ -129,7 +134,9 @@
     }
 
     async function renderQr(){
-      els.qrBox.innerHTML = '<span style="color:#9aa7b4">Carregando QR…</span>';
+      // spinner enquanto carrega
+      els.qrBox.innerHTML = '<div class="spinner" role="status" aria-label="Carregando QR"></div>';
+
       const url = CONFIG.endpoints.qrImage(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken);
       const res = await fetch(url, { headers: headers(), cache:'no-store' });
       if (!res.ok) { els.qrBox.innerHTML = '<span style="color:#c0392b">Falha ao carregar QR</span>'; return; }
