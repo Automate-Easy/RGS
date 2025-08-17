@@ -37,17 +37,15 @@
     <script>
       const CONFIG = {
         baseUrl: 'https://api.z-api.io',
-        instanceId: '3E4BB947350271DE447A5E06DC0B5B06', // ✅ seu instance ID
-        accountToken: 'Ffa07a322c30c40f69a39b5700df9bea8S', // ✅ token da CONTA
-        instanceToken: 'C52D3A6CA946485B7D1CA33A',          // ✅ token da INSTÂNCIA
-        authScheme: 'Bearer',
+        instanceId: '3E4BB947350271DE447A5E06DC0B5B06', // ✅ instance ID
+        accountToken: 'Ffa07a322c30c40f69a39b5700df9bea8S', // ✅ account token
+        instanceToken: 'C52D3A6CA946485B7D1CA33A',          // ✅ instance token
         pollMs: 5000,
         endpoints: {
-          status(base, id) { return `${base}/instances/${id}/status`; },
-          qr(base, id)     { return `${base}/instances/${id}/qr-code`; },
-          disconnect(base, id) { return `${base}/instances/${id}/disconnect`; },
-        },
-        instanceTokenHeader: 'X-Instance-Token'
+          status(base, id, instTok) { return `${base}/instances/${id}/token/${instTok}/status`; },
+          qr(base, id, instTok)     { return `${base}/instances/${id}/token/${instTok}/qr-code`; },
+          disconnect(base, id, instTok) { return `${base}/instances/${id}/token/${instTok}/disconnect`; },
+        }
       };
 
       const els = {
@@ -65,14 +63,10 @@
       }
 
       function authHeaders() {
-        const h = {
+        return {
           'Accept': 'application/json',
-          'Authorization': `${CONFIG.authScheme} ${CONFIG.accountToken}`
+          'Client-Token': CONFIG.accountToken
         };
-        if (CONFIG.instanceToken) {
-          h[CONFIG.instanceTokenHeader] = CONFIG.instanceToken;
-        }
-        return h;
       }
 
       async function getJSON(url) {
@@ -92,7 +86,7 @@
 
       async function fetchStatusAndUpdate() {
         try {
-          const data = await getJSON(CONFIG.endpoints.status(CONFIG.baseUrl, CONFIG.instanceId));
+          const data = await getJSON(CONFIG.endpoints.status(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken));
           const connected = data.connected ?? data.isConnected ?? false;
           els.stateText.textContent = connected ? 'Conectado' : 'Desconectado';
           els.connectedWrap.hidden = !connected;
@@ -106,7 +100,8 @@
       async function renderQr() {
         els.qrBox.innerHTML = 'Carregando QR…';
         try {
-          const data = await getJSON(CONFIG.endpoints.qr(CONFIG.baseUrl, CONFIG.instanceId));
+          const url = CONFIG.endpoints.qr(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken);
+          const data = await getJSON(url);
           const dataUrl = data.qrCode || (data.base64 ? `data:image/png;base64,${data.base64}` : null);
           if (dataUrl) {
             els.qrBox.innerHTML = `<img src="${dataUrl}" alt="QR Code" />`;
@@ -120,7 +115,7 @@
 
       async function disconnectInstance() {
         els.btnDisconnect.disabled = true;
-        const url = CONFIG.endpoints.disconnect(CONFIG.baseUrl, CONFIG.instanceId);
+        const url = CONFIG.endpoints.disconnect(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken);
         const headers = authHeaders();
         log(`➡️ POST ${url}\nHeaders: ${JSON.stringify(headers)}`);
         try {
