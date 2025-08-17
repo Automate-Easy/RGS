@@ -6,33 +6,28 @@
   <title>Cobranças RGS . Conectar WhatsApp</title>
   <style>
     :root{
-      --bg:#eef2f4; --card:#ffffff; --brand:#0c6a57;
-      --ok:#2ecc71; --shadow:0 12px 28px rgba(12,26,44,.12);
+      --bg:#eef2f4; --card:#ffffff; --muted:#7a8794;
+      --brand:#0c6a57; --brand-2:#0b5a49;
+      --ok:#2ecc71; --warn:#e67e22; --shadow:0 12px 28px rgba(12,26,44,.12);
     }
     *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);font:16px system-ui,Arial,sans-serif;
-      color:#132433;display:grid;place-items:center;min-height:100dvh;padding:20px}
-    .card{width:100%;max-width:420px;background:var(--card);border-radius:16px;
-      box-shadow:var(--shadow);overflow:hidden;border:1px solid #e5eaef}
+    body{margin:0;background:var(--bg);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,Inter,Arial,sans-serif;color:#132433;display:grid;place-items:center;min-height:100dvh;padding:20px}
+    .card{width:100%;max-width:420px;background:var(--card);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;border:1px solid #e5eaef}
     .card-head{background:var(--brand);color:#fff;padding:18px 20px;text-align:center}
     .card-head h1{margin:0;font-size:20px;line-height:1.2}
     .card-body{padding:20px}
     .status-box{background:#f2f5f7;border:1px solid #e6edf2;border-radius:14px;padding:18px;text-align:center}
     .status-title{font-size:13px;letter-spacing:.4px;color:#8a98a8;margin-bottom:14px;font-weight:700}
-    .qr{width:260px;height:260px;margin:0 auto;border-radius:12px;background:#fff;
-      display:grid;place-items:center;border:1px dashed #cfd8e3;overflow:hidden}
+    .qr{width:260px;height:260px;margin:0 auto;border-radius:12px;background:#fff;display:grid;place-items:center;border:1px dashed #cfd8e3;overflow:hidden}
     .qr img{width:100%;height:100%;object-fit:contain}
-    .spinner{width:44px;height:44px;border:4px solid #e6edf2;border-top-color:var(--brand);
-      border-radius:50%;animation:spin 1s linear infinite}
+    .spinner{width:44px;height:44px;border:4px solid #e6edf2;border-top-color:var(--brand);border-radius:50%;animation:spin 1s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
-    .ok{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;
-      margin:6px auto 4px;background:rgba(46,204,113,.15);border:2px solid rgba(46,204,113,.35)}
+    .ok{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;margin:6px auto 4px;background:rgba(46,204,113,.15);border:2px solid rgba(46,204,113,.35)}
     .ok svg{width:52px;height:52px;fill:var(--ok)}
     .divider{height:4px;border:0;border-radius:999px;background:#e6edf2;margin:18px 0}
     .msg{color:#6b7a8b;text-align:center;font-size:14px}
     .actions{display:flex;justify-content:center;margin-top:12px}
-    .btn{appearance:none;border:0;border-radius:12px;padding:10px 16px;font-weight:700;
-      cursor:pointer;transition:filter .15s ease,transform .05s ease}
+    .btn{appearance:none;border:0;border-radius:12px;padding:10px 16px;font-weight:700;cursor:pointer;transition:filter .15s ease,transform .05s ease}
     .btn-danger{background:#e74c3c;color:#fff}
     .btn:active{transform:translateY(1px)}
     .btn[disabled]{opacity:.6;cursor:not-allowed}
@@ -57,7 +52,7 @@
         <!-- desconectado (mostra QR) -->
         <div id="qrWrap" hidden>
           <div class="qr" id="qrBox">
-            <div class="spinner"></div>
+            <div class="spinner" role="status" aria-label="Carregando QR"></div>
           </div>
         </div>
       </div>
@@ -65,7 +60,7 @@
       <div class="divider"></div>
       <p class="msg" id="statusMsg">Aguardando status…</p>
 
-      <!-- botão aparece apenas conectado -->
+      <!-- botão vem DEPOIS da mensagem -->
       <div class="actions" id="actions" hidden>
         <button id="btnDisconnect" class="btn btn-danger">Desconectar instância</button>
       </div>
@@ -96,21 +91,22 @@
       statusTitle: document.getElementById('statusTitle')
     };
 
-    function headers(){ return { 'Accept':'application/json','Client-Token': CONFIG.accountToken }; }
+    function headers(){ return { 'Accept':'application/json', 'Client-Token': CONFIG.accountToken }; }
 
     function setConnectedUI(connected){
       if (connected){
         els.connectedWrap.hidden = false;
         els.qrWrap.hidden = true;
+        els.qrBox.innerHTML = '';
         els.statusTitle.textContent = 'STATUS DO DISPOSITIVO';
         els.statusMsg.textContent = 'Conexão estabelecida com sucesso';
-        els.actions.hidden = false; // mostra botão
+        els.actions.hidden = false; // mostra botão depois da msg
       } else {
         els.connectedWrap.hidden = true;
         els.qrWrap.hidden = false;
         els.statusTitle.textContent = 'QR CODE';
         els.statusMsg.textContent = 'Instância desconectada — escaneie o QR para conectar';
-        els.actions.hidden = true; // garante esconder botão
+        els.actions.hidden = true;  // esconde botão
       }
     }
 
@@ -134,14 +130,19 @@
     }
 
     async function renderQr(){
-      els.qrBox.innerHTML = '<div class="spinner"></div>';
+      els.qrBox.innerHTML = '<div class="spinner" role="status" aria-label="Carregando QR"></div>';
       const url = CONFIG.endpoints.qrImage(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken);
       const res = await fetch(url, { headers: headers(), cache:'no-store' });
-      if (!res.ok) { els.qrBox.innerHTML = '<span style="color:#c0392b">Erro ao carregar QR</span>'; return; }
-      const j = await res.json();
-      const base64 = j.base64 || j.image || j.qrCode || j.value;
+      if (!res.ok) { els.qrBox.innerHTML = '<span style="color:#c0392b">Falha ao carregar QR</span>'; return; }
+      const ct = res.headers.get('content-type') || '';
+      let base64;
+      if (ct.includes('application/json')){
+        const j = await res.json();
+        base64 = j.base64 || j.image || j.qrCode || j.value;
+      } else { base64 = (await res.text()).trim(); }
       if (!base64){ els.qrBox.textContent = 'QR não encontrado.'; return; }
-      els.qrBox.innerHTML = `<img src="data:image/png;base64,${base64}" alt="QR Code"/>`;
+      const dataUrl = base64.startsWith('data:') ? base64 : `data:image/png;base64,${base64}`;
+      els.qrBox.innerHTML = `<img src="${dataUrl}" alt="QR Code"/>`;
     }
 
     async function disconnectInstance(){
@@ -149,7 +150,7 @@
         els.btnDisconnect.disabled = true;
         const url = CONFIG.endpoints.disconnect(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken);
         await fetch(url, { method:'GET', headers: headers() });
-      } finally {
+      }finally{
         els.btnDisconnect.disabled = false;
         await tick();
       }
@@ -160,7 +161,7 @@
         const connected = await fetchStatus();
         setConnectedUI(connected);
         if (!connected) { await renderQr(); }
-      } catch {
+      }catch(e){
         setConnectedUI(false);
         try { await renderQr(); } catch {}
       }
