@@ -48,9 +48,6 @@
           <div class="ok" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M9 16.2l-3.5-3.5-1.4 1.4L9 19 20 8l-1.4-1.4z"/></svg>
           </div>
-          <div class="actions">
-            <button id="btnDisconnect" class="btn btn-danger">Desconectar instância</button>
-          </div>
         </div>
 
         <!-- desconectado (mostra QR) -->
@@ -61,6 +58,11 @@
 
       <div class="divider"></div>
       <p class="msg" id="statusMsg">Aguardando status…</p>
+
+      <!-- ⬇️ Botão movido para baixo da mensagem de status -->
+      <div class="actions" id="actions" hidden>
+        <button id="btnDisconnect" class="btn btn-danger">Desconectar instância</button>
+      </div>
     </div>
   </div>
 
@@ -85,7 +87,8 @@
       qrWrap: document.getElementById('qrWrap'),
       qrBox: document.getElementById('qrBox'),
       statusMsg: document.getElementById('statusMsg'),
-      btnDisconnect: document.getElementById('btnDisconnect')
+      btnDisconnect: document.getElementById('btnDisconnect'),
+      actions: document.getElementById('actions') // ⬅️ novo: container do botão
     };
 
     // ===== helpers =====
@@ -97,10 +100,12 @@
         els.qrWrap.hidden = true;
         els.qrBox.innerHTML = '';
         els.statusMsg.textContent = 'Conexão estabelecida com sucesso';
+        els.actions.hidden = false; // ⬅️ mostra o botão abaixo da mensagem
       } else {
         els.connectedWrap.hidden = true;
         els.qrWrap.hidden = false;
         els.statusMsg.textContent = 'Instância desconectada — escaneie o QR para conectar';
+        els.actions.hidden = true;  // ⬅️ esconde botão quando desconectado
       }
     }
 
