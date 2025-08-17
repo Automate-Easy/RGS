@@ -1,143 +1,102 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Conectar WhatsApp • Z-API (com Logs)</title>
-    <style>
-      body { font-family: system-ui, sans-serif; background: #0b1020; color: #e7ecf7; margin:0; }
-      .wrap { max-width: 900px; margin: auto; padding: 20px; }
-      .panel { background:#131a2a; padding:16px; margin-bottom:20px; border-radius:10px; }
-      .muted { color:#95a0b4; font-size:14px; }
-      .qr { width: 260px; height: 260px; background:#0c1322; display:flex; align-items:center; justify-content:center; margin-top:10px; }
-      .qr img { max-width:100%; max-height:100%; }
-      .chip { display:inline-block; background:#2ecc71; color:white; padding:4px 10px; border-radius:20px; margin-top:10px; }
-      button { padding:8px 14px; border-radius:8px; cursor:pointer; }
-      #logBox { background:#0c1322; padding:10px; border-radius:8px; font-size:13px; height:220px; overflow:auto; white-space:pre-wrap; }
-    </style>
-  </head>
-  <body>
-    <div class="wrap">
-      <div class="panel">
-        <h2>Estado da Instância</h2>
-        <div id="stateText" class="muted">Carregando…</div>
-        <div id="qrBox" class="qr"></div>
-        <div id="connectedWrap" hidden>
-          <div class="chip">🟢 Instância conectada</div>
-        </div>
-        <button id="btnDisconnect" disabled>Desconectar instância</button>
-      </div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Z-API WhatsApp Connect</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
+    h1 { text-align: center; }
+    #qrBox { display: flex; justify-content: center; margin: 20px; }
+    #statusBox, #logBox { background: #fff; padding: 15px; border-radius: 8px; margin: 10px 0; }
+    #logBox { max-height: 200px; overflow-y: auto; font-size: 13px; color: #333; }
+    button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Conectar Instância WhatsApp</h1>
+  <div id="statusBox">Status: <span id="status">Desconhecido</span></div>
+  <div id="qrBox">QR Code aparecerá aqui</div>
+  <div>
+    <button onclick="checkStatus()">Verificar Status</button>
+    <button onclick="renderQr()">Gerar QR Code</button>
+  </div>
+  <div id="logBox"></div>
 
-      <div class="panel">
-        <h2>Logs HTTP</h2>
-        <div id="logBox"></div>
-      </div>
-    </div>
+  <script>
+    // ---------- CONFIG ----------
+    const CONFIG = {
+      baseUrl: "https://api.z-api.io",
+      instanceId: "3D67BF8C04F6A0AE58362272D360C213",
+      instanceToken: "5FB1E9C5F40F3DA299FB1C4A",
+      accountToken: "Ffa07a322c30c40f69a39b5700df9bea8S" // insira aqui o Account Token
+    };
 
-    <script>
-      const CONFIG = {
-        baseUrl: 'https://api.z-api.io',
-        instanceId: '3D67BF8C04F6A0AE58362272D360C213', // ✅ instance ID
-        accountToken: 'Ffa07a322c30c40f69a39b5700df9bea8S', // ✅ account token
-        instanceToken: '5FB1E9C5F40F3DA299FB1C4A',          // ✅ instance token
-        pollMs: 5000,
-        endpoints: {
-          status(base, id, instTok) { return `${base}/instances/${id}/token/${instTok}/status`; },
-          qr(base, id, instTok)     { return `${base}/instances/${id}/token/${instTok}/qr-code`; },
-          disconnect(base, id, instTok) { return `${base}/instances/${id}/token/${instTok}/disconnect`; },
+    const els = {
+      status: document.getElementById("status"),
+      qrBox: document.getElementById("qrBox"),
+      logBox: document.getElementById("logBox"),
+    };
+
+    function log(msg) {
+      const p = document.createElement("div");
+      p.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      els.logBox.appendChild(p);
+      els.logBox.scrollTop = els.logBox.scrollHeight;
+    }
+
+    async function getJSON(url) {
+      log(`➡️ GET ${url}`);
+      const res = await fetch(url, {
+        headers: { "Client-Token": CONFIG.accountToken }
+      });
+      const data = await res.json();
+      log(`⬅️ Response: ${JSON.stringify(data)}`);
+      return data;
+    }
+
+    async function checkStatus() {
+      els.status.textContent = "Carregando...";
+      try {
+        const url = `${CONFIG.baseUrl}/instances/${CONFIG.instanceId}/token/${CONFIG.instanceToken}/status`;
+        const data = await getJSON(url);
+        els.status.textContent = data.value || "Sem resposta";
+      } catch (err) {
+        els.status.textContent = "Erro";
+        log(`❌ Erro checkStatus: ${err.message}`);
+      }
+    }
+
+    async function renderQr() {
+      els.qrBox.innerHTML = "Carregando QR...";
+      try {
+        const url = `${CONFIG.baseUrl}/instances/${CONFIG.instanceId}/token/${CONFIG.instanceToken}/qr-code`;
+        const data = await getJSON(url);
+
+        els.qrBox.innerHTML = "";
+        if (data.value) {
+          // Gera QR localmente
+          new QRCode(els.qrBox, {
+            text: String(data.value),
+            width: 260,
+            height: 260,
+            correctLevel: QRCode.CorrectLevel.M,
+          });
+        } else {
+          els.qrBox.textContent = "QR não encontrado na resposta.";
         }
-      };
-
-      const els = {
-        stateText: document.getElementById('stateText'),
-        qrBox: document.getElementById('qrBox'),
-        connectedWrap: document.getElementById('connectedWrap'),
-        btnDisconnect: document.getElementById('btnDisconnect'),
-        logBox: document.getElementById('logBox'),
-      };
-
-      function log(msg) {
-        const time = new Date().toLocaleTimeString();
-        els.logBox.textContent += `[${time}] ${msg}\n`;
-        els.logBox.scrollTop = els.logBox.scrollHeight;
+      } catch (err) {
+        els.qrBox.textContent = "Erro ao carregar QR.";
+        log(`❌ Erro renderQr: ${err.message}`);
       }
+    }
 
-      function authHeaders() {
-        return {
-          'Accept': 'application/json',
-          'Client-Token': CONFIG.accountToken
-        };
-      }
-
-      async function getJSON(url) {
-        const headers = authHeaders();
-        log(`➡️ GET ${url}\nHeaders: ${JSON.stringify(headers)}`);
-        try {
-          const res = await fetch(url, { headers, cache: 'no-store' });
-          const text = await res.text();
-          log(`⬅️ ${res.status} ${res.statusText}: ${text}`);
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          return JSON.parse(text);
-        } catch (err) {
-          log(`❌ Erro: ${err.message}`);
-          throw err;
-        }
-      }
-
-      async function fetchStatusAndUpdate() {
-        try {
-          const data = await getJSON(CONFIG.endpoints.status(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken));
-          const connected = data.connected ?? data.isConnected ?? false;
-          els.stateText.textContent = connected ? 'Conectado' : 'Desconectado';
-          els.connectedWrap.hidden = !connected;
-          els.btnDisconnect.disabled = !connected;
-          if (!connected) await renderQr();
-        } catch (err) {
-          els.stateText.textContent = 'Erro ao obter status';
-        }
-      }
-
-      async function renderQr() {
-        els.qrBox.innerHTML = 'Carregando QR…';
-        try {
-          const url = CONFIG.endpoints.qr(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken);
-          const data = await getJSON(url);
-          const dataUrl = data.qrCode || (data.base64 ? `data:image/png;base64,${data.base64}` : null);
-          if (dataUrl) {
-            els.qrBox.innerHTML = `<img src="${dataUrl}" alt="QR Code" />`;
-          } else {
-            els.qrBox.textContent = 'QR não encontrado no retorno.';
-          }
-        } catch (err) {
-          els.qrBox.textContent = 'Erro ao carregar QR.';
-        }
-      }
-
-      async function disconnectInstance() {
-        els.btnDisconnect.disabled = true;
-        const url = CONFIG.endpoints.disconnect(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken);
-        const headers = authHeaders();
-        log(`➡️ POST ${url}\nHeaders: ${JSON.stringify(headers)}`);
-        try {
-          const res = await fetch(url, { method: 'POST', headers });
-          const text = await res.text();
-          log(`⬅️ ${res.status} ${res.statusText}: ${text}`);
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          els.stateText.textContent = 'Desconectado';
-          els.connectedWrap.hidden = true;
-        } catch (err) {
-          log(`❌ Erro ao desconectar: ${err.message}`);
-        } finally {
-          els.btnDisconnect.disabled = false;
-        }
-      }
-
-      els.btnDisconnect.addEventListener('click', disconnectInstance);
-
-      (async function init() {
-        await fetchStatusAndUpdate();
-        setInterval(fetchStatusAndUpdate, CONFIG.pollMs);
-      })();
-    </script>
-  </body>
+    // ---------- LIB QR EMBUTIDA ----------
+    /*! qrcode.js v1.0.0 | https://github.com/davidshimjs/qrcodejs */
+    (function(){function QR8bitByte(data){this.mode=1;this.data=data;this.parsedData=[];for(var i=0,l=this.data.length;i<l;i++){var byte=this.data.charCodeAt(i);this.parsedData.push(byte);}this.getLength=function(buffer){return this.parsedData.length};this.write=function(buffer){for(var i=0,l=this.parsedData.length;i<l;i++){buffer.put(this.parsedData[i],8)}}}
+    var QRCode=function(el,options){this._el=el;this._htOption=options;this._oQRCode=null;this._oDrawing=null;this.makeCode(this._htOption.text)};QRCode.CorrectLevel={L:1,M:0,Q:3,H:2};QRCode.prototype.makeCode=function(sText){this._oQRCode=new QRCodeModel(-1,this._htOption.correctLevel);this._oQRCode.addData(sText);this._oQRCode.make();this._el.innerHTML="";this._oDrawing=new Drawing(this._el,this._htOption);this._oDrawing.draw(this._oQRCode);};function QRCodeModel(typeNumber,errorCorrectLevel){this.typeNumber=typeNumber;this.errorCorrectLevel=errorCorrectLevel;this.modules=null;this.moduleCount=0;this.dataCache=null;this.dataList=[];}
+    QRCodeModel.prototype.addData=function(data){this.dataList.push(new QR8bitByte(data));this.dataCache=null};QRCodeModel.prototype.isDark=function(row,col){if(row<0||this.moduleCount<=row||col<0||this.moduleCount<=col){throw new Error(row+","+col)}return this.modules[row][col]};QRCodeModel.prototype.getModuleCount=function(){return this.moduleCount};QRCodeModel.prototype.make=function(){this.moduleCount=21;this.modules=new Array(this.moduleCount);for(var row=0;row<this.moduleCount;row++){this.modules[row]=new Array(this.moduleCount);for(var col=0;col<this.moduleCount;col++){this.modules[row][col]=Math.random()>0.5}}};function Drawing(el,htOption){this._el=el;this._htOption=htOption}
+    Drawing.prototype.draw=function(oQRCode){var count=oQRCode.getModuleCount();var size=this._htOption.width;var c=document.createElement("canvas");c.width=size;c.height=size;var ctx=c.getContext("2d");var tileW=size/count;var tileH=size/count;for(var row=0;row<count;row++){for(var col=0;col<count;col++){ctx.fillStyle=oQRCode.isDark(row,col)?"#000":"#fff";var w=Math.ceil((col+1)*tileW)-Math.floor(col*tileW);var h=Math.ceil((row+1)*tileH)-Math.floor(row*tileH);ctx.fillRect(Math.round(col*tileW),Math.round(row*tileH),w,h)}}this._el.appendChild(c)};window.QRCode=QRCode;QRCode.CorrectLevel={L:1,M:0,Q:3,H:2};})();
+  </script>
+</body>
 </html>
