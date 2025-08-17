@@ -1,232 +1,167 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Conectar WhatsApp • Z-API</title>
-    <style>
-      :root { --bg:#0b1020; --card:#131a2a; --muted:#95a0b4; --ok:#2ecc71; --warn:#f39c12; --err:#e74c3c; --text:#e7ecf7; --accent:#7aa2ff; }
-      * { box-sizing: border-box; }
-      html, body { height: 100%; margin: 0; background: radial-gradient(1200px 600px at 10% 10%, #111a30, #0b1020); color: var(--text); font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif; }
-      .wrap { min-height: 100%; display: grid; place-items: center; padding: 24px; }
-      .card { width: 100%; max-width: 880px; background: color-mix(in oklab, var(--card) 90%, black 10%); border: 1px solid rgba(255,255,255,.06); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.35); overflow: hidden; }
-      header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 22px; border-bottom: 1px solid rgba(255,255,255,.06); background: linear-gradient(180deg, rgba(255,255,255,.02), transparent); }
-      header .title { display: flex; gap: 12px; align-items: center; }
-      header .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--warn); box-shadow: 0 0 0 3px rgba(243,156,18,.18); transition: background .2s ease; }
-      header .title h1 { margin: 0; font-size: 18px; letter-spacing: .2px; }
-      header .subtitle { color: var(--muted); font-size: 13px; }
-      .content { display: grid; gap: 20px; padding: 22px; }
-      .grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
-      @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
-      .panel { background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.06); border-radius: 16px; padding: 16px; }
-      .panel h2 { margin: 0 0 6px; font-size: 16px; }
-      .muted { color: var(--muted); font-size: 14px; }
-      .qr-wrap { display: grid; place-items: center; padding: 12px; border-radius: 12px; background: #0f1628; min-height: 360px; }
-      .qr { width: 320px; height: 320px; border-radius: 12px; background: #0c1322; display: grid; place-items: center; border: 1px dashed rgba(255,255,255,.12); overflow: hidden; }
-      .qr img { width: 100%; height: 100%; object-fit: contain; }
-      .status-ok { color: var(--ok); }
-      .status-warn { color: var(--warn); }
-      .status-err { color: var(--err); }
-      .chip { display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); font-size:13px; color:var(--muted); }
-      .spacer { height: 8px; }
-      footer { padding: 0; }
-      /* Área de logs discreta */
-      .logs { border-top: 1px solid rgba(255,255,255,.06); background: rgba(255,255,255,.02); padding: 12px 22px 18px; }
-      #logBox { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.4; background: #0c1322; border: 1px solid rgba(255,255,255,.06); border-radius: 10px; padding: 10px; max-height: 180px; overflow: auto; white-space: pre-wrap; color: #c9d4ea; }
-      .help { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
-      code { background: rgba(255,255,255,.06); padding: 0 6px; border-radius: 6px; }
-    </style>
-  </head>
-  <body>
-    <div class="wrap">
-      <div class="card" id="app">
-        <header>
-          <div class="title">
-            <div class="dot" id="statusDot" title="Status"></div>
-            <div>
-              <h1>Z-API • Conectar WhatsApp</h1>
-              <div class="subtitle" id="subtitle">Aguardando status…</div>
-            </div>
-          </div>
-        </header>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cobranças RGS . Conectar WhatsApp</title>
+  <style>
+    :root{
+      --bg:#eef2f4; --card:#ffffff; --muted:#7a8794;
+      --brand:#0c6a57; --brand-2:#0b5a49;
+      --ok:#2ecc71; --warn:#e67e22; --shadow:0 12px 28px rgba(12,26,44,.12);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);font:16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, sans-serif;color:#132433;display:grid;place-items:center;min-height:100dvh;padding:20px}
+    .card{width:100%;max-width:420px;background:var(--card);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;border:1px solid #e5eaef}
+    .card-head{background:var(--brand);color:#fff;padding:18px 20px;text-align:center}
+    .card-head h1{margin:0;font-size:20px;line-height:1.2}
+    .card-body{padding:20px}
+    .select{position:relative;margin-bottom:16px}
+    .select select{appearance:none;width:100%;padding:12px 40px 12px 14px;border:1px solid #dde5ec;border-radius:10px;background:#f9fbfc;color:#334155;font-weight:600}
+    .select:after{content:"▾";position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#6b7a8b;pointer-events:none}
+    .status-box{background:#f2f5f7;border:1px solid #e6edf2;border-radius:14px;padding:18px;text-align:center}
+    .status-title{font-size:13px;letter-spacing:.4px;color:#8a98a8;margin-bottom:14px;font-weight:700}
+    /* QR area */
+    .qr{width:260px;height:260px;margin:0 auto;border-radius:12px;background:#fff;display:grid;place-items:center;border:1px dashed #cfd8e3;overflow:hidden}
+    .qr img{width:100%;height:100%;object-fit:contain}
+    /* Check icon */
+    .ok{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;margin:6px auto 4px;background:rgba(46,204,113,.15);border:2px solid rgba(46,204,113,.35)}
+    .ok svg{width:52px;height:52px;fill:var(--ok)}
+    .divider{height:4px;border:0;border-radius:999px;background:#e6edf2;margin:18px 0}
+    .msg{color:#6b7a8b;text-align:center;font-size:14px}
+  </style>
+</head>
+<body>
+  <div class="card" id="app">
+    <div class="card-head">
+      <h1>Cobranças RGS<br/>Conectar WhatsApp</h1>
+    </div>
+    <div class="card-body">
+      <!-- seletor ilustrativo (não altera lógica) -->
+      <div class="select" aria-hidden="true">
+        <select disabled>
+          <option>(81) 9103-7041</option>
+        </select>
+      </div>
 
-        <div class="content">
-          <div class="grid">
-            <section class="panel">
-              <h2>Estado da Instância</h2>
-              <div id="stateText" class="muted">—</div>
-              <div class="spacer"></div>
+      <div class="status-box">
+        <div class="status-title">STATUS DO DISPOSITIVO</div>
 
-              <div class="qr-wrap" id="qrWrap" hidden>
-                <div class="qr" id="qrBox">
-                  <div class="muted">Carregando QR Code…</div>
-                </div>
-              </div>
-
-              <div id="connectedWrap" hidden>
-                <div class="chip"><span>🟢</span><strong>Instância conectada</strong></div>
-                <div class="spacer"></div>
-                <div class="help">Se o WhatsApp desconectar, o QR code aparecerá aqui automaticamente.</div>
-              </div>
-            </section>
-
-            <aside class="panel">
-              <h2>Configuração</h2>
-              <div class="help">
-                Endpoints com <code>Client-Token</code> no header e <code>instanceToken</code> na URL.<br/>
-                Polling automático a cada <code id="cfgPoll"></code>.
-              </div>
-              <div class="help">Base: <code id="cfgBase"></code></div>
-              <div class="help">Instance: <code id="cfgInstance"></code></div>
-            </aside>
+        <!-- conectado -->
+        <div id="connectedWrap" hidden>
+          <div class="ok" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M9 16.2l-3.5-3.5-1.4 1.4L9 19 20 8l-1.4-1.4z"/></svg>
           </div>
         </div>
 
-        <footer class="logs">
-          <div class="help">Logs HTTP (útil para depurar erros de autenticação e CORS):</div>
-          <div id="logBox"></div>
-        </footer>
+        <!-- desconectado (mostra QR) -->
+        <div id="qrWrap" hidden>
+          <div class="qr" id="qrBox"><span style="color:#9aa7b4">Carregando QR…</span></div>
+        </div>
       </div>
+
+      <div class="divider"></div>
+      <p class="msg" id="statusMsg">Aguardando status…</p>
     </div>
+  </div>
 
-    <script>
-      // ========= CONFIG =========
-      const CONFIG = {
-        baseUrl: 'https://api.z-api.io',
-        instanceId: '3D67BF8C04F6A0AE58362272D360C213',
-        instanceToken: '5FB1E9C5F40F3DA299FB1C4A',
-        accountToken: 'Ffa07a322c30c40f69a39b5700df9bea8S', // usado no header Client-Token
-        pollMs: 5000,
-        endpoints: {
-          status(base, id, tok)     { return `${base}/instances/${id}/token/${tok}/status`; },
-          qrImage(base, id, tok)    { return `${base}/instances/${id}/token/${tok}/qr-code/image`; },
-          disconnect(base, id, tok) { return `${base}/instances/${id}/token/${tok}/disconnect`; },
-        },
-      };
-
-      // ========= UI Refs =========
-      const els = {
-        dot: document.getElementById('statusDot'),
-        subtitle: document.getElementById('subtitle'),
-        stateText: document.getElementById('stateText'),
-        qrWrap: document.getElementById('qrWrap'),
-        qrBox: document.getElementById('qrBox'),
-        connectedWrap: document.getElementById('connectedWrap'),
-        logBox: document.getElementById('logBox'),
-        cfgBase: document.getElementById('cfgBase'),
-        cfgInstance: document.getElementById('cfgInstance'),
-        cfgPoll: document.getElementById('cfgPoll'),
-      };
-
-      // ========= Helpers =========
-      function maskToken(tok) {
-        if (!tok) return '';
-        return tok.length <= 8 ? tok : tok.slice(0,4) + '…' + tok.slice(-3);
+  <script>
+    // ===== CONFIG =====
+    const CONFIG = {
+      baseUrl: 'https://api.z-api.io',
+      instanceId: '3D67BF8C04F6A0AE58362272D360C213',
+      instanceToken: '5FB1E9C5F40F3DA299FB1C4A',
+      accountToken: 'Ffa07a322c30c40f69a39b5700df9bea8S',
+      pollMs: 5000,
+      endpoints: {
+        status(b, id, tok){ return `${b}/instances/${id}/token/${tok}/status`; },
+        qrImage(b, id, tok){ return `${b}/instances/${id}/token/${tok}/qr-code/image`; }
       }
-      function log(msg) {
-        const time = new Date().toLocaleTimeString();
-        els.logBox.textContent += `[${time}] ${msg}\n`;
-        els.logBox.scrollTop = els.logBox.scrollHeight;
+    };
+
+    // ===== UI refs =====
+    const els = {
+      connectedWrap: document.getElementById('connectedWrap'),
+      qrWrap: document.getElementById('qrWrap'),
+      qrBox: document.getElementById('qrBox'),
+      statusMsg: document.getElementById('statusMsg')
+    };
+
+    // ===== helpers =====
+    function headers(){ return { 'Accept':'application/json', 'Client-Token': CONFIG.accountToken }; }
+
+    function setConnectedUI(connected){
+      if (connected){
+        // mostrar check, esconder QR
+        els.connectedWrap.hidden = false;
+        els.qrWrap.hidden = true;
+        els.qrBox.innerHTML = '';
+        els.statusMsg.textContent = 'Conexão estabelecida com sucesso';
+      } else {
+        // mostrar QR, esconder check
+        els.connectedWrap.hidden = true;
+        els.qrWrap.hidden = false;
+        els.statusMsg.textContent = 'Instância desconectada — escaneie o QR para conectar';
       }
-      function authHeaders() {
-        return { 'Accept': 'application/json', 'Client-Token': CONFIG.accountToken };
+    }
+
+    function parseConnected(data){
+      if (typeof data.connected === 'boolean') return data.connected;
+      if (typeof data.isConnected === 'boolean') return data.isConnected;
+      const s = String(data.state ?? data.status ?? data.value ?? '').toUpperCase();
+      return s.includes('CONNECT'); // CONNECTED / RECONNECTED etc.
+    }
+
+    // ===== network =====
+    async function getJSON(url){
+      const res = await fetch(url, { headers: headers(), cache:'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }
+
+    async function fetchStatus(){
+      const url = CONFIG.endpoints.status(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken);
+      const data = await getJSON(url);
+      return parseConnected(data);
+    }
+
+    async function renderQr(){
+      els.qrBox.innerHTML = '<span style="color:#9aa7b4">Carregando QR…</span>';
+      const url = CONFIG.endpoints.qrImage(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken);
+      const res = await fetch(url, { headers: headers(), cache:'no-store' });
+      if (!res.ok) {
+        els.qrBox.innerHTML = '<span style="color:#c0392b">Falha ao carregar QR</span>';
+        return;
       }
-      function setStatus(connected, detailHtml='') {
-        els.dot.style.background = connected ? 'var(--ok)' : 'var(--warn)';
-        els.subtitle.textContent = connected ? 'Instância conectada' : 'Instância desconectada';
-        els.stateText.innerHTML = detailHtml || (connected ? '<span class="status-ok">Conectado</span>' : '<span class="status-warn">Desconectado</span>');
-        els.connectedWrap.hidden = !connected;
-        els.qrWrap.hidden = connected;
+      // pode vir JSON { base64: '...' | qrCode | image } ou texto base64 puro
+      const ct = res.headers.get('content-type') || '';
+      let base64;
+      if (ct.includes('application/json')){
+        const j = await res.json();
+        base64 = j.base64 || j.image || j.qrCode || j.value;
+      } else {
+        base64 = (await res.text()).trim();
       }
+      if (!base64){ els.qrBox.textContent = 'QR não encontrado.'; return; }
+      const dataUrl = base64.startsWith('data:') ? base64 : `data:image/png;base64,${base64}`;
+      els.qrBox.innerHTML = `<img src="${dataUrl}" alt="QR Code"/>`;
+    }
 
-      // ========= Requests com logs =========
-      async function getJSON(url) {
-        log(`➡️ GET ${url}\nHeaders: ${JSON.stringify({ 'Client-Token': maskToken(CONFIG.accountToken) })}`);
-        const res = await fetch(url, { headers: authHeaders(), cache: 'no-store' });
-        const text = await res.text();
-        log(`⬅️ ${res.status} ${res.statusText}: ${text.substring(0, 300)}${text.length>300?'…':''}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        try { return JSON.parse(text); } catch { return { value: text }; }
+    // ===== loop =====
+    async function tick(){
+      try{
+        const connected = await fetchStatus();
+        setConnectedUI(connected);
+        if (!connected) { await renderQr(); }
+      }catch(e){
+        // Em erro de status, mostramos opção de reconectar via QR
+        setConnectedUI(false);
+        try { await renderQr(); } catch {}
       }
+    }
 
-      async function fetchStatusAndUpdate() {
-        try {
-          const url = CONFIG.endpoints.status(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken);
-          const data = await getJSON(url);
-
-          // tente campos comuns
-          const connected =
-            (typeof data.connected === 'boolean' && data.connected) ||
-            (typeof data.isConnected === 'boolean' && data.isConnected) ||
-            (/connect/i.test(String(data.status || data.state || data.value || '')));
-
-          const detail =
-            `<div>Estado: <strong>${data.state ?? data.status ?? data.value ?? (connected?'CONNECTED':'DISCONNECTED')}</strong></div>` +
-            (data.phone ? `<div>Número: <code>${data.phone}</code></div>` : '');
-
-          setStatus(connected, detail);
-          if (!connected) await renderQr();
-        } catch (err) {
-          setStatus(false, `<span class="status-err">Erro ao obter status: ${err.message}</span>`);
-          // mesmo com erro de status, tentamos QR para ajudar na conexão
-          try { await renderQr(); } catch {}
-        }
-      }
-
-      async function renderQr() {
-        els.qrBox.innerHTML = '<div class="muted">Carregando QR Code…</div>';
-        try {
-          const url = CONFIG.endpoints.qrImage(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken);
-          log(`➡️ GET ${url}\nHeaders: ${JSON.stringify({ 'Client-Token': maskToken(CONFIG.accountToken) })}`);
-          const res = await fetch(url, { headers: authHeaders(), cache: 'no-store' });
-
-          // Pode vir como JSON { base64: '...' | image | value } ou texto puro/base64
-          const contentType = res.headers.get('content-type') || '';
-          let base64;
-
-          if (contentType.includes('application/json')) {
-            const data = await res.json();
-            log(`⬅️ ${res.status} ${res.statusText}: ${JSON.stringify(data).substring(0,300)}${JSON.stringify(data).length>300?'…':''}`);
-            base64 = data.base64 || data.image || data.qrCode || data.value;
-          } else {
-            const text = await res.text();
-            log(`⬅️ ${res.status} ${res.statusText}: [base64 length ${text.length}]`);
-            base64 = text.trim();
-          }
-
-          if (!base64) throw new Error('Resposta sem base64 de imagem.');
-          const dataUrl = base64.startsWith('data:') ? base64 : `data:image/png;base64,${base64}`;
-          els.qrBox.innerHTML = `<img src="${dataUrl}" alt="QR Code" />`;
-        } catch (err) {
-          els.qrBox.innerHTML = `<div class="status-err">Falha ao carregar QR: ${err.message}</div>`;
-          log(`❌ Erro renderQr: ${err.message}`);
-        }
-      }
-
-      async function disconnectInstance() {
-        try {
-          const url = CONFIG.endpoints.disconnect(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken);
-          log(`➡️ POST ${url}\nHeaders: ${JSON.stringify({ 'Client-Token': maskToken(CONFIG.accountToken) })}`);
-          const res = await fetch(url, { method: 'POST', headers: authHeaders() });
-          const text = await res.text();
-          log(`⬅️ ${res.status} ${res.statusText}: ${text.substring(0, 300)}${text.length>300?'…':''}`);
-          await fetchStatusAndUpdate();
-        } catch (err) {
-          log(`❌ Erro ao desconectar: ${err.message}`);
-        }
-      }
-
-      // ========= Init / Poll =========
-      (function initUI(){
-        els.cfgBase.textContent = CONFIG.baseUrl;
-        els.cfgInstance.textContent = CONFIG.instanceId;
-        els.cfgPoll.textContent = CONFIG.pollMs + 'ms';
-      })();
-
-      (async function init() {
-        await fetchStatusAndUpdate();
-        setInterval(fetchStatusAndUpdate, CONFIG.pollMs);
-      })();
-    </script>
-  </body>
+    tick();
+    setInterval(tick, CONFIG.pollMs);
+  </script>
+</body>
 </html>
