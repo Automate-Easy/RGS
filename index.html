@@ -25,8 +25,8 @@
     .ok{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;margin:6px auto 4px;background:rgba(46,204,113,.15);border:2px solid rgba(46,204,113,.35)}
     .ok svg{width:52px;height:52px;fill:var(--ok)}
     .divider{height:4px;border:0;border-radius:999px;background:#e6edf2;margin:18px 0}
-    .msg{color:#6b7a8b;text-align:center;font-size:14px;margin:0}
-    /* Botão (abaixo da mensagem) */
+    .msg{color:#6b7a8b;text-align:center;font-size:14px}
+    /* Botão desconectar (só aparece conectado) */
     .actions{display:flex;justify-content:center;margin-top:12px}
     .btn{appearance:none;border:0;border-radius:12px;padding:10px 16px;font-weight:700;cursor:pointer;transition:filter .15s ease,transform .05s ease}
     .btn-danger{background:#e74c3c;color:#fff}
@@ -43,10 +43,13 @@
       <div class="status-box">
         <div class="status-title">STATUS DO DISPOSITIVO</div>
 
-        <!-- conectado (apenas o check) -->
+        <!-- conectado -->
         <div id="connectedWrap" hidden>
           <div class="ok" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M9 16.2l-3.5-3.5-1.4 1.4L9 19 20 8l-1.4-1.4z"/></svg>
+          </div>
+          <div class="actions">
+            <button id="btnDisconnect" class="btn btn-danger">Desconectar instância</button>
           </div>
         </div>
 
@@ -57,12 +60,7 @@
       </div>
 
       <div class="divider"></div>
-      <!-- Mensagem de status -->
       <p class="msg" id="statusMsg">Aguardando status…</p>
-      <!-- Botão abaixo da mensagem (aparece somente conectado) -->
-      <div class="actions" id="actions" hidden>
-        <button id="btnDisconnect" class="btn btn-danger">Desconectar instância</button>
-      </div>
     </div>
   </div>
 
@@ -77,7 +75,7 @@
       endpoints: {
         status(b,id,t){ return `${b}/instances/${id}/token/${t}/status`; },
         qrImage(b,id,t){ return `${b}/instances/${id}/token/${t}/qr-code/image`; },
-        disconnect(b,id,t){ return `${b}/instances/${id}/token/${t}/disconnect`; } // GET
+        disconnect(b,id,t){ return `${b}/instances/${id}/token/${t}/disconnect`; }
       }
     };
 
@@ -87,7 +85,6 @@
       qrWrap: document.getElementById('qrWrap'),
       qrBox: document.getElementById('qrBox'),
       statusMsg: document.getElementById('statusMsg'),
-      actions: document.getElementById('actions'),
       btnDisconnect: document.getElementById('btnDisconnect')
     };
 
@@ -96,16 +93,14 @@
 
     function setConnectedUI(connected){
       if (connected){
-        els.connectedWrap.hidden = false;   // check
-        els.qrWrap.hidden = true;           // esconde QR
+        els.connectedWrap.hidden = false;
+        els.qrWrap.hidden = true;
         els.qrBox.innerHTML = '';
         els.statusMsg.textContent = 'Conexão estabelecida com sucesso';
-        els.actions.hidden = false;         // mostra botão abaixo da mensagem
       } else {
         els.connectedWrap.hidden = true;
         els.qrWrap.hidden = false;
         els.statusMsg.textContent = 'Instância desconectada — escaneie o QR para conectar';
-        els.actions.hidden = true;          // esconde botão quando desconectado
       }
     }
 
@@ -130,4 +125,57 @@
     }
 
     async function renderQr(){
-      els.qrBox.innerHTML = '<span style="color:#9aa7b4">Carrega
+      els.qrBox.innerHTML = '<span style="color:#9aa7b4">Carregando QR…</span>';
+      const url = CONFIG.endpoints.qrImage(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken);
+      const res = await fetch(url, { headers: headers(), cache:'no-store' });
+      if (!res.ok) { els.qrBox.innerHTML = '<span style="color:#c0392b">Falha ao carregar QR</span>'; return; }
+
+      const ct = res.headers.get('content-type') || '';
+      let base64;
+      if (ct.includes('application/json')){
+        const j = await res.json();
+        base64 = j.base64 || j.image || j.qrCode || j.value;
+      } else {
+        base64 = (await res.text()).trim();
+      }
+      if (!base64){ els.qrBox.textContent = 'QR não encontrado.'; return; }
+      const dataUrl = base64.startsWith('data:') ? base64 : `data:image/png;base64,${base64}`;
+      els.qrBox.innerHTML = `<img src="${dataUrl}" alt="QR Code"/>`;
+    }
+
+    async function disconnectInstance(){
+      try{
+        els.btnDisconnect.disabled = true;
+        const url = CONFIG.endpoints.disconnect(CONFIG.baseUrl, CONFIG.instanceId, CONFIG.instanceToken);
+        const res = await fetch(url, { method:'GET', headers: headers() });
+        // independentemente do corpo, depois de desconectar, atualiza a UI
+      }catch(err){
+        // opcional: exibir mensagem de erro
+      }finally{
+        els.btnDisconnect.disabled = false;
+        // força checar o status logo após desconectar
+        await tick();
+      }
+    }
+
+    // ===== loop =====
+    async function tick(){
+      try{
+        const connected = await fetchStatus();
+        setConnectedUI(connected);
+        if (!connected) { await renderQr(); }
+      }catch(e){
+        setConnectedUI(false);
+        try { await renderQr(); } catch {}
+      }
+    }
+
+    // eventos
+    els.btnDisconnect.addEventListener('click', disconnectInstance);
+
+    // start
+    tick();
+    setInterval(tick, CONFIG.pollMs);
+  </script>
+</body>
+</html>
